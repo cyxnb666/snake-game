@@ -1,0 +1,1 @@
+#app{justify-content:center;align-items:center;height:100vh;flex-direction:column}#app,.row{display:flex}.cell{width:20px;height:20px;border:1px solid #eee}.snake-cell{background-color:green}.food-cell{background-color:red}
