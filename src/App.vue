@@ -6,7 +6,7 @@
     </div>
 
     <!-- Game UI -->
-    <div v-else @keydown="keyDown" tabindex="0">
+    <div v-if="isGameStarted" @keydown="keyDown" tabindex="0" ref="gameContainer">
       <div v-if="gameOver">
         <h2>Game Over</h2>
         <p>Score: {{ score }}</p>
@@ -43,7 +43,10 @@ export default {
   methods: {
     startGame() {
       this.isGameStarted = true;
-      this.resetGame(); // Call resetGame here
+      this.resetGame(); // Initialize or reset the game state
+      this.$nextTick(() => {
+        this.$refs.gameContainer.focus(); // Set focus to the game container
+      });
     },
 
     resetGame() {
@@ -75,6 +78,7 @@ export default {
       }
       if (this.isCollision(newHead)) {
         this.gameOver = true;
+        //console.log("Game Over. Snake's last position:", newHead);
         clearInterval(this.gameInterval);
         return;
       }
@@ -96,7 +100,7 @@ export default {
         if (!this.isSnake(...newFoodPosition)) {
           foundSafeSpot = true;
           this.foods.push(newFoodPosition); // Add new food position to the array
-          console.log("New food generated at:", newFoodPosition); // Log the food's location
+          //console.log("New food generated at:", newFoodPosition); // Log the food's location
         }
         attempts++;
       }
@@ -121,15 +125,32 @@ export default {
       return eaten;
     },
     isCollision(head) {
-      return head[0] < 0 || head[0] >= this.rows ||
-        head[1] < 0 || head[1] >= this.cols ||
+      return (
+        head[0] < 0 || // Too far up, hitting the top boundary
+        head[0] > 20 || // Adjusted to allow movement to row 20, game over if moving beyond
+        head[1] < 0 || // Too far left, hitting the left boundary
+        head[1] > 20 || // Adjusted to allow movement to column 20, game over if moving beyond
         this.snake.some((segment, index) =>
-          index !== 0 && segment[0] === head[0] && segment[1] === head[1]);
+          index !== 0 && segment[0] === head[0] && segment[1] === head[1]) // Check for self-collision
+      );
     },
     keyDown(e) {
       const keyMap = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" };
-      const direction = keyMap[e.key];
-      if (direction) this.direction = direction;
+      const newDirection = keyMap[e.key];
+      const oppositeDirection = {
+        up: "down",
+        down: "up",
+        left: "right",
+        right: "left"
+      };
+
+      // Prevent reversing direction if the snake has length > 1
+      if (newDirection && this.snake.length > 1 && newDirection !== oppositeDirection[this.direction]) {
+        this.direction = newDirection;
+      } else if (newDirection && this.snake.length === 1) {
+        // Allow any direction if the snake has not eaten any food (length === 1)
+        this.direction = newDirection;
+      }
     },
     isFood(row, col) {
       return this.foods.some(food => food[0] === row && food[1] === col);
